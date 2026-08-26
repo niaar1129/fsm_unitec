@@ -27,4 +27,4 @@ EXPOSE 8000
 
 # Capa 8: Comando de ejecución WSGI concurrente (Gunicorn)
 # Sustituye "fsm_unitec.wsgi" por el nombre real de tu módulo WSGI si difiere.
-CMD ["sh", "-c", "python manage.py migrate && python manage.py createsuperuser --noinput --username admin --email admin@unitec.com || true && gunicorn --bind 0.0.0.0:8000 --workers 3 core.wsgi:application"]
+CMD ["sh", "-c", "python manage.py collectstatic --noinput && python manage.py migrate && python manage.py createsuperuser --noinput --username admin --email admin@unitec.com || true && gunicorn --bind 0.0.0.0:8000 --workers 3 core.wsgi:application"]
