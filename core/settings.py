@@ -21,11 +21,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ct2%_akr7#n=-frj9t81wcsm4v$!5)qujeyn&gl3p9z)djat8l'
+# Extracción dinámica con valores de respaldo (Fallback) para evitar colapsos locales
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-ct2%_akr7#n=-frj9t81wcsm4v$!5)qujeyn&gl3p9z)djat8l')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Solo será True si la variable de entorno dice explícitamente 'True', de lo contrario será False (Seguro por defecto)
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
@@ -40,12 +40,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
     'operaciones',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -122,6 +124,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Directorio de consolidación absoluto para producción (Requerido por WhiteNoise)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
@@ -150,3 +155,6 @@ SIMPLE_JWT = {
     'SIGNING_KEY': SECRET_KEY,
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+# Autoriza el tráfico desde cualquier origen (necesario para clientes móviles)
+CORS_ALLOW_ALL_ORIGINS = True
