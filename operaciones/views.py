@@ -1,13 +1,15 @@
 """
 operaciones/views.py
-Endpoint de sincronización Offline-First. Recibe una ráfaga (lista JSON) de
-Tareas con RegistroDowntime anidado desde la app móvil del técnico, y la
-procesa a través de TareaSerializer, que ya implementa el upsert idempotente
-con resolución Last-Write-Wins aprobado por el Arquitecto.
+Endpoints de sincronización Offline-First (Bidireccional). 
 
-Requiere que TareaSerializer esté disponible en operaciones/serializers.py
-(el archivo entregado antes como serializers_sync.py debe copiarse/renombrarse
-a esa ruta dentro de la app 'operaciones' para que este import funcione).
+1. SyncTareasView (Push): Recibe una ráfaga (lista JSON) de Tareas con 
+   RegistroDowntime anidado desde la app móvil del técnico, y la procesa a 
+   través de TareaSerializer (resolución Last-Write-Wins).
+
+2. SincronizacionDescendenteView (Pull): Emite el estado global autoritativo 
+   desde PostgreSQL hacia el cliente móvil para la fase de reconciliación local.
+
+Requiere que TareaSerializer y Tarea (model) estén disponibles.
 """
 from rest_framework import status
 from rest_framework.views import APIView
@@ -15,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from rest_framework.permissions import IsAuthenticated
 
+from .models import Tarea
 from .serializers import TareaSerializer
 
 
@@ -83,3 +86,22 @@ class SyncTareasView(APIView):
             TareaSerializer(tareas_procesadas, many=True).data,
             status=status.HTTP_200_OK,
         )
+
+
+class SincronizacionDescendenteView(APIView):
+    """
+    GET /api/sync/tareas/descarga/
+
+    Endpoint de Lectura (Pull): Retorna el estado global de las tareas
+    autoritativas. Se ejecuta desde el cliente móvil inmediatamente después
+    de un Push exitoso para garantizar consistencia eventual bidireccional.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Extracción global de registros.
+        # Iteraciones futuras requerirán segmentación por 'cuadrilla_id'
+        # o 'asignado_a' para limitar el ancho de banda y mitigar carga en redes lentas.
+        tareas = Tarea.objects.all()
+        serializer = TareaSerializer(tareas, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
