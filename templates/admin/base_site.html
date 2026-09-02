@@ -1,0 +1,21 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ title }} | UNITEC FSM{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">Panel de Control - UNITEC FSM</a></h1>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script type="text/javascript">
+    /*
+     * Motor de Sondeo Asíncrono (JS Polling)
+     * Fuerza la recarga del árbol DOM cada 15 segundos (15000 ms) para reflejar
+     * instantáneamente las ráfagas de sincronización emitidas por los técnicos.
+     */
+    setInterval(function() {
+        window.location.reload();
+    }, 15000);
+</script>
+{% endblock %}
