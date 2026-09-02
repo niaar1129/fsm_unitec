@@ -2,6 +2,7 @@ import uuid
 from decimal import Decimal
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 # ==============================================================================
 # CLASES BASE Y AUDITORÍA
@@ -63,6 +64,16 @@ class TipoDowntime(models.TextChoices):
     OTROS = 'OTROS', 'Otros (Requiere justificación)'
 
 class Tarea(ModeloBaseAuditoria):
+    # <-- INYECCIÓN DE LLAVE FORÁNEA (Data Partitioning) -->
+    asignado_a = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='tareas_asignadas',
+        help_text="Técnico responsable de esta orden en mina."
+    )
+
     titulo = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
     estado = models.CharField(max_length=20, choices=EstadoTarea.choices, default=EstadoTarea.PENDIENTE)

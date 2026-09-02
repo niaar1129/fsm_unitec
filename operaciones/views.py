@@ -75,7 +75,7 @@ class SyncTareasView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = TareaSerializer(data=request.data, many=True)
+        serializer = TareaSerializer(data=request.data, many=True, context={'request': request})
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -93,15 +93,18 @@ class SincronizacionDescendenteView(APIView):
     GET /api/sync/tareas/descarga/
 
     Endpoint de Lectura (Pull): Retorna el estado global de las tareas
-    autoritativas. Se ejecuta desde el cliente móvil inmediatamente después
-    de un Push exitoso para garantizar consistencia eventual bidireccional.
+    autoritativas. Filtra estrictamente por el token JWT para garantizar
+    la segmentación de datos y mitigar la carga en redes atenuadas.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        # Extracción global de registros.
-        # Iteraciones futuras requerirán segmentación por 'cuadrilla_id'
-        # o 'asignado_a' para limitar el ancho de banda y mitigar carga en redes lentas.
-        tareas = Tarea.objects.all()
-        serializer = TareaSerializer(tareas, many=True)
+        # SEGMENTACIÓN DE DATOS OBLIGATORIA
+        # Si un administrador desea ver todas las tareas, deberá hacerlo
+        # en el panel web. La API móvil solo devuelve los datos del portador.
+        tareas = Tarea.objects.filter(asignado_a=request.user)
+        
+        # OBLIGATORIO: Pasar el context={'request': request} al serializador
+        # para que los métodos create/update tengan acceso al token JWT.
+        serializer = TareaSerializer(tareas, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)

@@ -61,10 +61,11 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'], # <-- RUTA INYECTADA PARA SOBRESCRIBIR BASE_SITE.HTML
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -110,12 +111,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
+# Mutación de L10n/i18n: Configurado para Perú (Mina Raura)
+LANGUAGE_CODE = 'es-pe'
+TIME_ZONE = 'America/Lima'
 
 USE_I18N = True
-
 USE_TZ = True
 
 

@@ -55,6 +55,8 @@ class TareaSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField()
     creado_en_dispositivo = serializers.DateTimeField(required=True)
     tiempos_muertos = RegistroDowntimeSerializer(many=True, required=False)
+    # Exponemos el campo de solo lectura para auditoría
+    asignado_a = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Tarea  # <-- CORRECCIÓN: Conectado a la tabla real
@@ -69,8 +71,9 @@ class TareaSerializer(serializers.ModelSerializer):
             'creado_en_dispositivo',
             'sincronizado_en_nube',
             'tiempos_muertos',
+            'asignado_a', # <-- Campo inyectado en la API
         ]
-        read_only_fields = ['sincronizado_en_nube']
+        read_only_fields = ['sincronizado_en_nube', 'asignado_a']
 
     def validate_porcentaje_avance(self, value):
         if not (0 <= value <= 100):
@@ -91,6 +94,10 @@ class TareaSerializer(serializers.ModelSerializer):
         tiempos_data = validated_data.pop('tiempos_muertos', [])
         tarea_id = validated_data.pop('id')
 
+        # Interceptamos el usuario del contexto de la petición HTTP (JWT)
+        user = self.context['request'].user
+        validated_data['asignado_a'] = user
+
         tarea, _aplicado = _upsert_last_write_wins(Tarea, tarea_id, validated_data)
 
         for downtime_data in tiempos_data:
@@ -105,6 +112,11 @@ class TareaSerializer(serializers.ModelSerializer):
         tiempos_data = validated_data.pop('tiempos_muertos', [])
         validated_data.pop('id', None)
         incoming_ts = validated_data.get('creado_en_dispositivo')
+
+        # Si la tarea se está actualizando (Upsert), forzamos que quede asignada 
+        # al técnico que está enviando la actualización, previniendo robo de autoría.
+        user = self.context['request'].user
+        validated_data['asignado_a'] = user
 
         if incoming_ts is not None and instance.creado_en_dispositivo > incoming_ts:
             pass 
